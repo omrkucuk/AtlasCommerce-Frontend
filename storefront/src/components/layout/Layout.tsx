@@ -1,17 +1,25 @@
-import { Outlet } from "react-router-dom";
+// src/components/layout/Layout.tsx
+import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
-const Layout = () => {
+export default function Layout() {
+  const location = useLocation();
+  const isHome = location.pathname === "/";
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-bg">
       <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
-        <Outlet />
+      <main className="flex-1">
+        {isHome ? (
+          <Outlet />
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+            <Outlet />
+          </div>
+        )}
       </main>
       <Footer />
     </div>
   );
-};
-
-export default Layout;
+}

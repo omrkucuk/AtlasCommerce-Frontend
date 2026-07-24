@@ -1,79 +1,138 @@
-import { Link } from "react-router-dom";
-import { ShoppingCart } from "lucide-react";
-import type { ProductListItem } from "../../types";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAddToBasket } from "../../hooks/useBasket";
+import { useAppSelector } from "../../app/hook";
+import type { ProductListItem } from "../../types";
 
-interface ProductCardProps {
+interface Props {
   product: ProductListItem;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
-  const { mutate: addToBasket, isPending } = useAddToBasket();
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill={filled ? "#F59E0B" : "none"}
+      stroke={filled ? "#F59E0B" : "#D1D5DB"}
+      strokeWidth="1.5"
+    >
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+export function ProductCard({ product }: Props) {
+  const { mutate: addToBasket, isPending } = useAddToBasket();
+  const { isAuthenticated } = useAppSelector((s) => s.auth);
+  const navigate = useNavigate();
+  const [added, setAdded] = useState(false);
+
+  const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    addToBasket({
-      productId: product.id,
-      productName: product.name,
-      sku: product.sku,
-      quantity: 1,
-      unitPrice: product.basePrice,
-      productImageUrl: product.mainImageUrl ?? undefined,
-    });
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    addToBasket(
+      {
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        quantity: 1,
+        unitPrice: product.basePrice,
+        productImageUrl: product.mainImageUrl ?? undefined,
+      },
+      {
+        onSuccess: () => {
+          setAdded(true);
+          setTimeout(() => setAdded(false), 1800);
+        },
+      },
+    );
   };
 
+  const isOutOfStock = product.stockQuantity === 0;
+
   return (
-    <Link to={`/products/${product.id}`} className="group block">
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-        {/* Resim */}
-        <div className="aspect-square bg-gray-100 overflow-hidden">
+    <div className="group flex flex-col gap-3">
+      <Link to={`/products/${product.id}`} className="block">
+        {/* Image */}
+        <div className="relative aspect-3/4 bg-gray-50 rounded-lg overflow-hidden">
           {product.mainImageUrl ? (
             <img
               src={product.mainImageUrl}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="product-img w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-300">
-              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
+            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#D1D5DB"
+                strokeWidth="1"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="m3 9 5-5 4 4 3-3 6 6" />
               </svg>
             </div>
           )}
-        </div>
 
-        {/* Bilgi */}
-        <div className="p-4">
-          <p className="text-xs text-gray-400 mb-1">{product.brandName}</p>
-          <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2 group-hover:text-slate-700">
-            {product.name}
-          </h3>
-
-          <div className="flex items-center justify-between mt-3">
-            <div>
-              <span className="text-lg font-bold text-slate-900">
-                {product.basePrice.toLocaleString("tr-TR")} ₺
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+            {product.isFeatured && (
+              <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 bg-accent text-white rounded">
+                ÖNE ÇIKAN
               </span>
-              {product.stockQuantity === 0 && (
-                <p className="text-xs text-red-500 mt-0.5">Stok yok</p>
-              )}
-            </div>
+            )}
+            {isOutOfStock && (
+              <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 bg-gray-500 text-white rounded">
+                TÜKENDI
+              </span>
+            )}
+          </div>
 
+          {/* Quick add */}
+          <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
             <button
-              onClick={handleAddToCart}
-              disabled={isPending || product.stockQuantity === 0}
-              className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              onClick={handleAdd}
+              disabled={isPending || isOutOfStock}
+              className={`w-full py-3 text-xs font-semibold tracking-wide transition-colors disabled:opacity-50 ${
+                added ? "bg-success text-white" : "bg-brand text-white hover:bg-opacity-90"
+              }`}
             >
-              <ShoppingCart size={16} />
+              {added ? "✓ Sepete Eklendi" : isOutOfStock ? "Stokta Yok" : "Hızlı Ekle"}
             </button>
           </div>
         </div>
+      </Link>
+
+      {/* Info */}
+      <div className="flex flex-col gap-1">
+        <p className="text-[11px] text-muted uppercase tracking-wider">{product.brandName}</p>
+        <Link to={`/products/${product.id}`} className="no-underline">
+          <h3 className="text-sm font-medium text-ink leading-snug group-hover:text-accent transition-colors line-clamp-2">
+            {product.name}
+          </h3>
+        </Link>
+
+        {/* Rating — placeholder */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <StarIcon key={i} filled={i <= 4} />
+            ))}
+          </div>
+        </div>
+
+        <span className="text-sm font-semibold text-ink">
+          {product.basePrice.toLocaleString("tr-TR")} ₺
+        </span>
       </div>
-    </Link>
+    </div>
   );
 }
