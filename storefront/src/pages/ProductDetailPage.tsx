@@ -1,4 +1,3 @@
-// src/pages/ProductDetailPage.tsx
 import { useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useProduct, useProductSearch } from "../hooks/useProducts";
@@ -115,7 +114,7 @@ export default function ProductDetailPage() {
         <div className="flex gap-3">
           {/* Thumbnail sütunu */}
           {images.length > 1 && (
-            <div className="flex flex-col gap-2 w-16 flex-shrink-0">
+            <div className="flex flex-col gap-2 w-16 shrink-0">
               {images.map((img, i) => (
                 <button
                   key={img.id}
